@@ -76,43 +76,78 @@ class AutoPy:
             logging.error(f"Error generating code: {str(e)}")
             return None
 
+    def extract_dependencies(self, code):
+        import ast
+        module_names = set()
+        try:
+            parsed_code = ast.parse(code)
+            for node in ast.walk(parsed_code):
+                if isinstance(node, ast.Import):
+                    for n in node.names:
+                        module_names.add(n.name.split('.')[0])
+                elif isinstance(node, ast.ImportFrom):
+                    if node.module:
+                        module_names.add(node.module.split('.')[0])
+            return list(module_names)
+        except Exception as e:
+            logging.error(f"Error parsing code for dependencies: {str(e)}")
+            return []
+
     def execute_code(self, code):
         if not self.docker_client:
             logging.error("Docker client is not initialized. Cannot execute code.")
             return None, "Docker client is not initialized. Cannot execute code."
         
         try:
-            # Use inline command to run Python code inside Docker
-            logging.info("Running code in Docker container...")
-            try:
-                output = self.docker_client.containers.run(
-                    image="python:3.9",
-                    command=["python", "-c", code],  # Execute the code inline
-                    detach=False,
-                    mem_limit="128m",
-                    network_disabled=True,
-                    stderr=True,
-                    remove=True,
-                )
+            # Extract dependencies from the code
+            dependencies = self.extract_dependencies(code)
+            logging.info(f"Extracted dependencies: {dependencies}")
 
-                # Decode the output and return
-                logs = output.decode('utf-8')
-                logging.info(f"Container execution successful: {logs}")
-                return logs, None
+            # Build the command to install dependencies and run the code
+            if dependencies:
+                # Use pip's quiet mode and set environment variable to suppress root user warnings
+                # Redirect stdout and stderr of pip to /dev/null to suppress output
+                pip_install_cmd = "PIP_ROOT_USER_ACTION=ignore pip install --quiet " + ' '.join(dependencies) + " > /dev/null 2>&1 && "
+            else:
+                pip_install_cmd = ""
 
-            except docker.errors.ContainerError as e:
-                logging.error(f"Container error: {e.stderr.decode('utf-8')}")
-                return None, "Container error during execution"
-            except docker.errors.DockerException as e:
-                logging.error(f"Docker error during container run: {str(e)}")
-                return None, "Docker error during container run"
-            except Exception as e:
-                logging.error(f"Unexpected error during container execution: {str(e)}")
-                return None, "Unexpected error during container execution"
+            # Encode the code to avoid shell escaping issues
+            import base64
+            code_bytes = code.encode('utf-8')
+            code_b64 = base64.b64encode(code_bytes).decode('utf-8')
 
+            # Command to run inside Docker
+            command = f"/bin/sh -c \"{pip_install_cmd} python -c \\\"import base64; exec(base64.b64decode('{code_b64}'))\\\"\""
+
+            logging.info(f"Running command in Docker: {command}")
+
+            # Run the container and capture both stdout and stderr
+            output = self.docker_client.containers.run(
+                image="python:3.9",
+                command=command,
+                detach=False,
+                mem_limit="128m",
+                network_disabled=False,  # Enable network to allow pip install
+                stderr=True,
+                remove=True,
+            )
+
+            # Decode the output and return
+            logs = output.decode('utf-8')
+            logging.info(f"Container execution successful. Output:\n{logs}")
+            return logs, None
+
+        except docker.errors.ContainerError as e:
+            error_message = e.stderr.decode('utf-8')
+            logging.error(f"Container error: {error_message}")
+            return None, f"Container error during execution:\n{error_message}"
+        except docker.errors.DockerException as e:
+            logging.error(f"Docker error during container run: {str(e)}")
+            return None, "Docker error during container run"
         except Exception as e:
-            logging.error(f"Unexpected error: {str(e)}")
-            return None, "Unexpected error"
+            logging.error(f"Unexpected error during container execution: {str(e)}")
+            return None, "Unexpected error during container execution"
+
 
     def run_code_generation(self, description):
         iteration = 0
@@ -149,9 +184,19 @@ class AutoPy:
         return None, None
 
 if __name__ == "__main__":
-    task_description = input("Enter the task description (Press Enter for default): ")
+
+    #default_task = "Generate a list of Fibonacci numbers up to the 10th element and print it."
+
+    # More examples:
+    #default_task = "Write a script that uses numpy to create an array and print it."
+    #default_task = "Write a script that calculates the sum of all prime numbers below 100 and prints the result."
+    #default_task = "Write a script that finds the factorial of 5 and prints 'The factorial of 5 is: <result>'."
+    #default_task = "Write a script to plot a sine wave using matplotlib." #This is not working properly yet
+
+    print(f"Default task: {default_task}")
+    task_description = input("Enter the task description (Press Enter to use the default): ")
     if not task_description:
-        task_description = "Write a script that prints the Fibonacci series up to 100."
+        task_description = default_task
 
     # Initialize AutoPy
     autopy = AutoPy(max_iterations=5, model='gpt-4o-mini')

@@ -2,6 +2,9 @@
 
 `AutoPy` short for Auto Python, is a tool that leverages OpenAI's language model to generate, execute, and refine Python scripts based on user prompts. It securely runs the generated code inside a Docker container.
 
+**Note:** AutoPy is currently in the initial development stage, and further refinements are coming soon.
+
+
 ## Features
 - Generate Python code based on text prompts.
 - Execute code in a Docker container for isolation.
