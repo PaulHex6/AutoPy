@@ -26,7 +26,7 @@
     ```env
     OPENAI_API_KEY=your_api_key_here
     ```
-This key will be used to access OpenAI services through aimlapi.com.
+This key will be used to access OpenAI services through [aimlapi.com](https://aimlapi.com).
 
 ## Usage
 Run the script:
