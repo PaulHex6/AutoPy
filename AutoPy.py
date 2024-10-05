@@ -185,7 +185,7 @@ class AutoPy:
 
 if __name__ == "__main__":
 
-    #default_task = "Generate a list of Fibonacci numbers up to the 10th element and print it."
+    default_task = "Generate a list of Fibonacci numbers up to the 10th element and print it."
 
     # More examples:
     #default_task = "Write a script that uses numpy to create an array and print it."
