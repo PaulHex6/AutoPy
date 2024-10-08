@@ -2,18 +2,31 @@
 
 `AutoPy` short for Auto Python, is a tool that leverages OpenAI's language model to generate, execute, and refine Python scripts based on user prompts. It securely runs the generated code inside a Docker container.
 
+Use `AutoPy` to automate code refinement, run complex computations, analyze data, and handle other computationally intensive tasks. Unlike a pure GPT prompt, AutoPy executes, tests, and iteratively improves the code until it works correctly. For example, it can generate, run, and debug scripts to plot graphs or manipulate large datasets, which GPT alone cannot execute or validate.
+
+
+
 **Note:** AutoPy is currently in the initial development stage, and further refinements are coming soon.
 
+## AutoPy Workflow
 
-## Features
-- Generate Python code based on text prompts.
-- Execute code in a Docker container for isolation.
-- Automatically refine code based on errors.
+Below is the workflow logic for AutoPy:
+
+1. **Input:** Receives a natural language prompt.
+
+2. **Code Generation:** Uses GPT to generate Python code based on the input prompt.
+
+3. **Execution and Refinement:**
+   - In order to verify the code runs it (secure Docker environment).
+   - Captures and processes errors, refining the code with GPT until corrected.
+   - Verifies the output against expected results, repeating the process if necessary.
+
+4. **Output:** Returns the final code and its output.
 
 ## Requirements
 - Python 3.7+
 - Docker installed and running
-- OpenAI API key
+- API key from [aimlapi.com](https://aimlapi.com)
 - Python packages: `openai`, `docker`, `python-dotenv`
 
 ## Installation
