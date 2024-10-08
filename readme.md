@@ -31,4 +31,4 @@
 ## Usage
 Run the script:
 ```bash
-python autopy.py
+python AutoPy.py
